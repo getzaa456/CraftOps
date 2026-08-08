@@ -1,4 +1,4 @@
-# MC Host Panel
+# CraftOps
 
 Self-hosted web platform for spinning up, managing, and monitoring Minecraft servers on demand — built as a DevOps portfolio project demonstrating containerization, Kubernetes orchestration, CI/CD, and monitoring. Runs entirely on a local machine using a local Kubernetes cluster (k3d) — no cloud VPS required.
 
