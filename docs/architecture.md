@@ -3,13 +3,13 @@
 ## Components
 
 ```
-┌─────────────┐      REST + WebSocket      ┌──────────────────┐
+┌─────────────┐      REST + WebSocket      ┌───────────────────┐
 │  Frontend   │ ─────────────────────────► │   Backend API     │
 │  (React)    │ ◄───────────────────────── │  (Node/Express)   │
 └─────────────┘                            └────────┬──────────┘
                                                      │ @kubernetes/client-node
                                                      ▼
-                                            ┌──────────────────┐
+                                            ┌───────────────────┐
                                             │  Kubernetes API   │
                                             │  (k3d cluster)    │
                                             └────────┬──────────┘
@@ -22,9 +22,9 @@
                               └───────────┘   └───────────┘    └───────────┘
 
                                             ┌──────────────────┐
-                            Backend API ───►│   PostgreSQL      │
-                                            │ users / servers /  │
-                                            │ backups            │
+                            Backend API ───►│   PostgreSQL     │
+                                            │ users / servers /│
+                                            │ backups          │
                                             └──────────────────┘
 ```
 
