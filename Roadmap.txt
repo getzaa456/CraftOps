@@ -1,0 +1,79 @@
+ทำบนคอมตัวเองได้เลยครับ เหมาะมากสำหรับพัฒนาเทส เพราะ Docker รันบนเครื่องได้ปกติ แค่ตอนจะโชว์พอร์ตให้คนอื่นเข้าถึงจริงๆ ค่อยมีทางเลือกเพิ่ม (tunnel หรือ deploy VPS ราคาถูก) จะอธิบายในขั้นตอนท้ายๆ
+
+## Phase 0 เตรียมเครื่อง
+- ลง Docker Desktop (หรือ Docker Engine ถ้าใช้ LinuxWSL2)
+- ลง Node.js, Git, VS Code
+- ลง PostmanInsomnia ไว้เทส API
+
+## Phase 1 ทำความเข้าใจ Docker Minecraft ก่อน (manual)
+รันเซิร์ฟเวอร์ MC ด้วยมือก่อน เพื่อเข้าใจว่า container ต้องการอะไรบ้าง
+```bash
+docker run -d -p 2556525565 -e EULA=TRUE 
+  -v mc-datadata 
+  --name mc-test itzgminecraft-server
+```
+ลองเชื่อมด้วย Minecraft client จริง ดู log, ลอง stopstart, ลองแก้ `server.properties` — เข้าใจ mechanism ก่อนจะเขียนโค้ดครอบ
+
+## Phase 2 ออกแบบสถาปัตยกรรม
+วางแผนว่า
+- 1 user สร้างได้กี่เซิร์ฟเวอร์ (จำกัด quota)
+- Port allocation ยังไง (เช่น pool 25565-25600 จ่ายทีละพอร์ต)
+- ข้อมูลอะไรเก็บใน DB (user, server config, container_id, port, status)
+
+วาด diagram ง่ายๆ (Frontend → Backend API → Docker Engine API → Container) เก็บไว้ใส่ README ทีหลัง
+
+## Phase 3 Backend API
+ใช้ Docker SDK ควบคุม container แทนสั่ง CLI ตรงๆ
+- Node.js `dockerode`
+- Python `docker-py`
+
+Endpoint หลักที่ต้องมี
+- `POST servers` — สร้าง container ใหม่ (เลือก versiontype, จอง port)
+- `POST serversidstart` , `stop`
+- `DELETE serversid`
+- `GET serversidstatus` — ดึง CPURAMสถานะจาก Docker stats API
+- `GET serversidlogs` — stream log แบบ real-time (websocket)
+- `POST serversidcommand` — ส่งคำสั่งผ่าน RCON เข้าเกม
+
+## Phase 4 Database + Auth
+- PostgreSQL เก็บ users, servers, resource_usage
+- ใช้ JWT auth ธรรมดา (หรือ NextAuth ถ้าใช้ Next.js)
+- ตาราง servers เก็บ owner_id, container_id, port, mc_version, server_type, status, created_at
+
+## Phase 5 Frontend Dashboard
+- หน้า LoginRegister
+- หน้า My Servers — list + status badge (onlineoffline)
+- ปุ่ม Create Server (form เลือก version, RAM limit, type)
+- หน้า Server Detail
+  - ปุ่ม StartStopDelete
+  - Console แบบ real-time (websocket ต่อกับ log stream)
+  - ช่องพิมพ์คำสั่ง RCON
+  - กราฟ CPURAM ใช้งาน (เชื่อม backend ที่ดึงจาก Docker stats)
+
+## Phase 6 File Manager + Backup
+- Endpoint สำหรับ listuploaddownload ไฟล์ใน volume (plugin, world folder)
+- Cron job หรือปุ่ม manual backup → zip world folder → เก็บ local หรือ push ขึ้น S3MinIO (ใช้ MinIO local ก็ได้ ไม่ต้องเสียเงิน cloud)
+
+## Phase 7 ทำให้เข้าถึงจากนอกเครื่องได้ (สำหรับ demo)
+ตัวเลือกไล่ตามงบ
+1. ฟรีสุด ใช้ Cloudflare Tunnel หรือ ngrok เปิด local server ให้คนนอกเข้าถึงชั่วคราว (ดีสำหรับ demo สัมภาษณ์งาน)
+2. ราคาถูก เช่า VPS เล็กๆ (Oracle Free Tier  Hetzner ~ $4เดือน) deploy โปรเจกต์จริงถาวร — ให้ portfolio ดูน่าเชื่อถือกว่า
+3. Provision VPS ด้วย Terraform แล้วใช้ Ansible หรือ script ติดตั้ง Docker อัตโนมัติ — ส่วนนี้แหละที่โชว์สกิล DevOps ชัดสุด
+
+## Phase 8 CICD
+- GitHub Actions push code → build Docker image ของ backendfrontend → push ไป Docker HubGHCR → SSH deploy ไป VPS อัตโนมัติ
+- เพิ่ม step test (unit test API) ก่อน deploy
+
+## Phase 9 MonitoringLogging
+- Prometheus scrape metrics จาก Docker (cAdvisor)
+- Grafana dashboard โชว์ CPURAM ของแต่ละ MC server
+- Loki หรือเก็บ log รวมไว้ดูปัญหาย้อนหลัง
+
+## Phase 10 ขัดให้พร้อมใส่พอร์ต
+- เขียน README ละเอียด architecture diagram, tech stack, วิธี run local, screenshotdemo video
+- ใส่ diagram flow (draw.io หรือ Excalidraw) 
+- อธิบาย decision ที่สำคัญ เช่น ทำไมเลือก Docker แทน VM, วิธี handle security (isolate container แต่ละ user)
+
+คำแนะนำเรื่องลำดับ อย่าพยายามทำ Phase 7-9 (deploy จริง + CICD + monitoring) ตั้งแต่แรก ทำ Phase 1-6 ให้รันได้ในเครื่องสมบูรณ์ก่อน แล้วค่อยขยับออก production-grade ทีหลัง จะ debug ง่ายกว่าเยอะ และถ้าเวลาไม่พอ ตัด Phase 8-9 ออกได้ยังเหลือโปรเจกต์ที่โชว์ของได้ครบ
+
+อยากให้เจาะลึกส่วนไหนก่อนเป็นพิเศษไหม เช่น โค้ดตัวอย่าง Docker API integration หรือ Terraform script สำหรับ provision VPS

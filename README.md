@@ -43,7 +43,7 @@ See [`docs/api-contract.md`](docs/api-contract.md) for full endpoint list.
 - [x] Phase 0 — Environment setup
 - [x] Phase 1 — Manual Docker Minecraft testing
 - [x] Phase 2 — Architecture & schema design
-- [ ] Phase 3 — Backend API (Kubernetes client integration)
+- [x] Phase 3 — Backend API (Kubernetes client integration)
 - [ ] Phase 4 — Database + Auth
 - [ ] Phase 5 — Frontend dashboard
 - [ ] Phase 6 — File manager + backups
