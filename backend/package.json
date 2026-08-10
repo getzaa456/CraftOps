@@ -5,7 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "dev": "node --watch src/index.js",
+    "migrate": "node src/db/migrate.js"
   },
   "dependencies": {
     "@kubernetes/client-node": "^0.21.0",

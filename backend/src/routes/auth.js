@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { createUser, findUserByEmail } from '../db/users.js';
+import { createUser, findUserByEmail, findUserById } from '../db/users.js';
+import { requireAuth } from '../middleware/auth.js';
 import { config } from '../config.js';
 
 export const authRouter = Router();
@@ -33,6 +34,16 @@ authRouter.post('/login', async (req, res, next) => {
 
     const token = jwt.sign({ sub: user.id, email: user.email }, config.jwtSecret, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, email: user.email } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+authRouter.get('/me', requireAuth, async (req, res, next) => {
+  try {
+    const user = await findUserById(req.user.sub);
+    if (!user) return res.status(404).json({ error: 'user not found' });
+    res.json({ id: user.id, email: user.email, plan: user.plan, max_servers: user.max_servers });
   } catch (err) {
     next(err);
   }

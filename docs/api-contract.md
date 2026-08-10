@@ -21,6 +21,12 @@ Auth: `Authorization: Bearer <jwt>` on all routes except `/auth/*`.
 { "token": "jwt", "user": { "id": "uuid", "email": "user@example.com" } }
 ```
 
+### `GET /auth/me`
+```json
+// response 200
+{ "id": "uuid", "email": "user@example.com", "plan": "free", "max_servers": 1 }
+```
+
 ## Servers
 
 ### `POST /servers`
