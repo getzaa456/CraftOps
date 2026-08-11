@@ -1,0 +1,298 @@
+/* ── NavBar ── */
+.navbar {
+  background: var(--void);
+  color: var(--bone);
+  border-bottom: var(--border);
+}
+.navbar-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand {
+  font-family: var(--font-display);
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+  color: var(--bone);
+}
+.brand-mark {
+  width: 20px;
+  height: 20px;
+  background: var(--grass);
+  border: 2px solid var(--bone);
+  box-shadow: inset -3px -3px 0 rgba(0,0,0,0.35);
+}
+.nav-user {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--stone);
+}
+
+/* ── Buttons (pixel-bordered, blocky) ── */
+.btn {
+  font-family: var(--font-display);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border);
+  border-radius: var(--radius);
+  background: var(--parchment-raised);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: var(--shadow-block);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.btn:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 rgba(23,24,28,0.35); }
+.btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(23,24,28,0.35); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: var(--shadow-block); }
+
+.btn-primary { background: var(--grass); color: var(--bone); border-color: var(--grass-dark); }
+.btn-danger { background: var(--redstone); color: var(--bone); border-color: #7a281a; }
+.btn-ghost { background: transparent; box-shadow: none; border-color: var(--stone); }
+.btn-ghost:hover { box-shadow: none; background: rgba(35,36,31,0.05); }
+.btn-sm { padding: var(--space-2) var(--space-3); font-size: 11px; }
+.btn-block { width: 100%; }
+
+/* ── Voxel status block (signature element) ── */
+.voxel {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--ink);
+  position: relative;
+  flex-shrink: 0;
+}
+.voxel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset -6px -6px 0 rgba(0,0,0,0.3), inset 3px 3px 0 rgba(255,255,255,0.18);
+}
+.voxel-lg { width: 72px; height: 72px; }
+.voxel-running { background: var(--grass); }
+.voxel-stopped { background: var(--stone); }
+.voxel-error { background: var(--redstone); }
+.voxel-creating { background: var(--gold); animation: voxel-pulse 1.4s ease-in-out infinite; }
+.voxel-deleting { background: var(--stone); animation: voxel-pulse 0.9s ease-in-out infinite; }
+
+@keyframes voxel-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* ── Status badge ── */
+.badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border: 2px solid currentColor;
+  border-radius: var(--radius);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.badge-running { color: var(--grass-dark); }
+.badge-stopped { color: var(--stone); }
+.badge-error { color: var(--redstone); }
+.badge-creating, .badge-deleting { color: #93701f; }
+
+/* ── Server cards grid ── */
+.server-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-4);
+}
+.card {
+  background: var(--parchment-raised);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-block);
+  padding: var(--space-4);
+}
+.server-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  text-decoration: none;
+  color: inherit;
+}
+.server-card-head { display: flex; gap: var(--space-3); align-items: center; }
+.server-card-title { font-family: var(--font-display); font-size: 15px; text-transform: uppercase; }
+.server-card-meta { font-family: var(--font-mono); font-size: 12px; color: var(--stone); }
+.server-card-foot { display: flex; gap: var(--space-2); margin-top: auto; }
+
+/* ── Empty state ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-4);
+  padding: var(--space-8) var(--space-4);
+  border: 3px dashed var(--stone);
+  border-radius: var(--radius);
+}
+
+/* ── Stat bars (health/hunger-bar style gauges) ── */
+.stat-row { display: flex; flex-direction: column; gap: 4px; }
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: flex;
+  justify-content: space-between;
+  color: var(--stone);
+}
+.stat-track {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+}
+.stat-segment {
+  flex: 1;
+  background: rgba(35,36,31,0.12);
+  border: 1px solid var(--ink);
+}
+.stat-segment.filled { background: var(--fill-color, var(--grass)); }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(23,24,28,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  z-index: 20;
+}
+.modal {
+  background: var(--parchment-raised);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: 8px 8px 0 rgba(23,24,28,0.4);
+  padding: var(--space-5);
+  width: 100%;
+  max-width: 420px;
+}
+
+/* ── Forms ── */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--stone);
+}
+.field input, .field select {
+  padding: var(--space-3);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--bone);
+  color: var(--ink);
+}
+.field-error {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--redstone);
+}
+
+/* ── Console / log stream ── */
+.console {
+  background: var(--void);
+  color: var(--bone);
+  border: var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  height: 420px;
+}
+.console-log {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.console-log-line { color: #b9d9a8; }
+.console-log-line.system { color: var(--gold); }
+.console-log-line.error { color: #e08774; }
+.console-input {
+  display: flex;
+  border-top: 2px solid var(--stone);
+}
+.console-input .prompt {
+  font-family: var(--font-mono);
+  color: var(--diamond);
+  padding: var(--space-3) 0 var(--space-3) var(--space-3);
+}
+.console-input input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--bone);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: var(--space-3);
+}
+.console-input input:focus { outline: none; }
+
+/* ── Login page ── */
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--void);
+  background-image:
+    linear-gradient(rgba(244,241,228,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(244,241,228,0.03) 1px, transparent 1px);
+  background-size: 28px 28px;
+  padding: var(--space-4);
+}
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--parchment-raised);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+  padding: var(--space-6);
+}
+.auth-title { text-align: center; margin-bottom: var(--space-2); }
+.auth-sub { text-align: center; color: var(--stone); font-size: 13px; margin-bottom: var(--space-5); }
+.auth-switch { text-align: center; font-size: 13px; margin-top: var(--space-4); color: var(--stone); }
+.auth-switch button {
+  background: none; border: none; color: var(--grass-dark);
+  text-decoration: underline; cursor: pointer; font-weight: 600; padding: 0;
+}
+
+.banner {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  padding: var(--space-3);
+  border: 2px solid var(--redstone);
+  color: var(--redstone);
+  border-radius: var(--radius);
+  background: rgba(193,67,45,0.08);
+}
+
+.spinner-dot {
+  width: 8px; height: 8px; background: var(--grass); display: inline-block;
+  animation: voxel-pulse 0.8s ease-in-out infinite;
+}
