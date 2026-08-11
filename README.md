@@ -45,7 +45,7 @@ See [`docs/api-contract.md`](docs/api-contract.md) for full endpoint list.
 - [x] Phase 2 — Architecture & schema design
 - [x] Phase 3 — Backend API (Kubernetes client integration)
 - [x] Phase 4 — Database + Auth
-- [ ] Phase 5 — Frontend dashboard
+- [x] Phase 5 — Frontend dashboard
 - [ ] Phase 6 — File manager + backups
 - [ ] Phase 7 — k3d cluster setup + Helm packaging
 - [ ] Phase 8 — CI/CD pipeline (build + local redeploy)
@@ -66,11 +66,16 @@ k3d cluster create mc-cluster \
   -p "25565-25600:30565-30600@server:0"
 kubectl create namespace mc-servers
 
-# 3. Run the backend
-npm run dev
+# 3. Backend
+npm run dev   # http://localhost:4000
+
+# 4. Frontend
+cd ../frontend && cp .env.example .env
+npm install
+npm run dev   # http://localhost:5173
 ```
 
-> Phase 7 replaces steps 1–3 with a Helm chart deploying backend, frontend, and Postgres *inside* the same k3d cluster — see roadmap.
+> Phase 7 replaces steps 1–4 with a Helm chart deploying backend, frontend, and Postgres *inside* the same k3d cluster — see roadmap.
 
 ## License
 

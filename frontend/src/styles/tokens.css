@@ -1,0 +1,34 @@
+:root {
+  /* ── Color ── */
+  --void: #17181c;          /* nav, footer, console bg */
+  --void-raised: #1f2025;   /* cards/panels on void */
+  --parchment: #ede8d8;     /* main content bg — stone/sandstone, not pure cream */
+  --parchment-raised: #f5f2e6;
+  --grass: #5c8d33;         /* primary action */
+  --grass-dark: #3f6323;    /* pressed/hover, borders */
+  --diamond: #4ac7c0;       /* running / info accent */
+  --redstone: #c1432d;      /* error / danger */
+  --gold: #d9a441;          /* creating / pending */
+  --ink: #23241f;           /* text on parchment */
+  --bone: #f4f1e4;          /* text on void */
+  --stone: #8a8578;         /* muted borders/dividers */
+
+  /* ── Type ── */
+  --font-display: 'Pixelify Sans', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* ── Scale ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --radius: 3px; /* deliberately small — blocky, not rounded */
+  --border: 3px solid var(--ink);
+  --shadow-block: 4px 4px 0 rgba(23, 24, 28, 0.35);
+}
