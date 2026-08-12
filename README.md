@@ -15,8 +15,7 @@ Users register, click "Create Server," pick a Minecraft version/type, and the pl
 | Database | PostgreSQL |
 | Container image | `itzg/minecraft-server` |
 | Orchestration | Kubernetes via **k3d** (local, Docker-in-Docker k3s cluster) |
-| Packaging | Helm chart |
-| CI/CD | GitHub Actions (build images, run tests, redeploy to local k3d via self-hosted runner or manual `helm upgrade`) |
+| CI/CD | GitHub Actions (build images, run tests, redeploy to local k3d via self-hosted runner) |
 | Monitoring | Prometheus + Grafana (deployed in-cluster) |
 | Ingress | Traefik (bundled with k3s) |
 
@@ -47,7 +46,7 @@ See [`docs/api-contract.md`](docs/api-contract.md) for full endpoint list.
 - [x] Phase 4 — Database + Auth
 - [x] Phase 5 — Frontend dashboard
 - [x] Phase 6 — File manager + backups
-- [x] Phase 7 — k3d cluster setup + Helm packaging
+- [x] Phase 7 — k3d cluster setup
 - [ ] Phase 8 — CI/CD pipeline (build + local redeploy)
 - [ ] Phase 9 — Monitoring & logging (Prometheus/Grafana in-cluster)
 - [ ] Phase 10 — Documentation polish
