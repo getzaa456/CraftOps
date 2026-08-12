@@ -18,3 +18,12 @@ export class NotFoundError extends Error {
     this.status = 404;
   }
 }
+
+// src/errors.js
+export class PathTraversalError extends Error {
+  constructor(message = 'Access denied: path traversal attempt detected') {
+    super(message);
+    this.name = 'PathTraversalError';
+    this.statusCode = 400;
+  }
+}

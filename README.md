@@ -46,7 +46,7 @@ See [`docs/api-contract.md`](docs/api-contract.md) for full endpoint list.
 - [x] Phase 3 — Backend API (Kubernetes client integration)
 - [x] Phase 4 — Database + Auth
 - [x] Phase 5 — Frontend dashboard
-- [ ] Phase 6 — File manager + backups
+- [x] Phase 6 — File manager + backups
 - [ ] Phase 7 — k3d cluster setup + Helm packaging
 - [ ] Phase 8 — CI/CD pipeline (build + local redeploy)
 - [ ] Phase 9 — Monitoring & logging (Prometheus/Grafana in-cluster)

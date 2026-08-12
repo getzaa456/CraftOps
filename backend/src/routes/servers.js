@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { requireAuth } from '../middleware/auth.js';
 import {
   createServer,
@@ -9,6 +10,10 @@ import {
   deleteServer,
 } from '../services/serverService.js';
 import { sendCommand } from '../services/commandService.js';
+import { listFiles, downloadFile, uploadFile } from '../services/fileService.js';
+import { createBackup, listBackups, restoreBackup } from '../services/backupService.js';
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 export const serversRouter = Router();
 serversRouter.use(requireAuth);
@@ -89,6 +94,63 @@ serversRouter.post('/:id/command', async (req, res, next) => {
     if (!command || typeof command !== 'string') return res.status(400).json({ error: 'command required' });
     const output = await sendCommand(req.user.sub, req.params.id, command);
     res.json({ output });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Files ──────────────────────────────────────────────
+serversRouter.get('/:id/files', async (req, res, next) => {
+  try {
+    const files = await listFiles(req.user.sub, req.params.id, req.query.path);
+    res.json(files);
+  } catch (err) {
+    next(err);
+  }
+});
+
+serversRouter.get('/:id/files/download', async (req, res, next) => {
+  try {
+    const { buffer, filename } = await downloadFile(req.user.sub, req.params.id, req.query.path);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+});
+
+serversRouter.post('/:id/files/upload', upload.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'file required' });
+    const result = await uploadFile(req.user.sub, req.params.id, req.query.path || req.body.path, req.file.originalname, req.file.buffer);
+    res.status(201).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Backups ────────────────────────────────────────────
+serversRouter.post('/:id/backups', async (req, res, next) => {
+  try {
+    const backup = await createBackup(req.user.sub, req.params.id);
+    res.status(201).json(backup);
+  } catch (err) {
+    next(err);
+  }
+});
+
+serversRouter.get('/:id/backups', async (req, res, next) => {
+  try {
+    res.json(await listBackups(req.user.sub, req.params.id));
+  } catch (err) {
+    next(err);
+  }
+});
+
+serversRouter.post('/:id/backups/:backupId/restore', async (req, res, next) => {
+  try {
+    res.status(202).json(await restoreBackup(req.user.sub, req.params.id, req.params.backupId));
   } catch (err) {
     next(err);
   }

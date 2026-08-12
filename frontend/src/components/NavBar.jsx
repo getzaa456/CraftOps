@@ -9,7 +9,7 @@ export function NavBar() {
       <div className="navbar-inner">
         <Link to="/" className="brand">
           <span className="brand-mark" />
-          MC Host Panel
+          CraftOps
         </Link>
         {user && (
           <div className="row">
