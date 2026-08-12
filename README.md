@@ -47,7 +47,7 @@ See [`docs/api-contract.md`](docs/api-contract.md) for full endpoint list.
 - [x] Phase 4 — Database + Auth
 - [x] Phase 5 — Frontend dashboard
 - [x] Phase 6 — File manager + backups
-- [ ] Phase 7 — k3d cluster setup + Helm packaging
+- [x] Phase 7 — k3d cluster setup + Helm packaging
 - [ ] Phase 8 — CI/CD pipeline (build + local redeploy)
 - [ ] Phase 9 — Monitoring & logging (Prometheus/Grafana in-cluster)
 - [ ] Phase 10 — Documentation polish
@@ -74,8 +74,6 @@ cd ../frontend && cp .env.example .env
 npm install
 npm run dev   # http://localhost:5173
 ```
-
-> Phase 7 replaces steps 1–4 with a Helm chart deploying backend, frontend, and Postgres *inside* the same k3d cluster — see roadmap.
 
 ## License
 

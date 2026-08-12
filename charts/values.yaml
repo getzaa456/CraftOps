@@ -1,0 +1,38 @@
+# Values are sized for a single-node local k3d cluster, not production HA.
+
+namespace:
+  # Namespace where per-user Minecraft server Pods/Services/PVCs live.
+  # Must match the range mapped when the k3d cluster was created:
+  #   k3d cluster create mc-cluster -p "25565-25600:30565-30600@server:0"
+  servers: mc-servers
+
+backend:
+  image: mc-panel-backend:local
+  pullPolicy: IfNotPresent
+  replicas: 1
+  port: 4000
+  env:
+    portRangeMin: 25565
+    portRangeMax: 25600
+    nodePortOffset: 5000
+
+frontend:
+  image: mc-panel-frontend:local
+  pullPolicy: IfNotPresent
+  replicas: 1
+  port: 80
+  # Exposed on the host via the k3d port mapping below — see README.
+  #   k3d cluster create mc-cluster -p "8080:30080@server:0"
+  nodePort: 30080
+
+postgres:
+  image: postgres:16-alpine
+  user: mcpanel
+  password: mcpanel # dev-only default — override with --set for anything shared
+  database: mcpanel
+  storage: 2Gi
+
+secrets:
+  # Dev-only default — always override in real usage:
+  #   helm upgrade --install mc-panel ./charts/mc-panel --set secrets.jwtSecret=$(openssl rand -hex 32)
+  jwtSecret: change-me-in-real-deploy

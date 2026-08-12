@@ -87,5 +87,6 @@ export async function listServersByOwner(ownerId) {
 }
 
 export async function deleteServerRow(id) {
-  await query(`UPDATE servers SET status = 'deleted' WHERE id = $1`, [id]);
+  // 🛠️ แก้ไขตรงนี้: สั่งลบแถว (Row) ออกจาก Database ถาวร (Hard Delete)
+  await query(`DELETE FROM servers WHERE id = $1`, [id]);
 }

@@ -9,7 +9,7 @@
     "migrate": "node src/db/migrate.js"
   },
   "dependencies": {
-    "@kubernetes/client-node": "^0.21.0",
+    "@kubernetes/client-node": "^1.4.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

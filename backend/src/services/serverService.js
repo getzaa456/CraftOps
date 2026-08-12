@@ -45,21 +45,40 @@ export async function createServer(userId, { mcType, mcVersion, memoryLimitMb = 
     memoryLimitMb,
     cpuLimit,
   });
-
+  
+  const targetNamespace = namespace || 'mc-servers';
+  
   try {
-    await coreApi.createNamespacedConfigMap(
-      namespace,
-      buildConfigMap({ ...names, namespace, mcType, mcVersion, memoryLimitMb })
-    );
-    await coreApi.createNamespacedPersistentVolumeClaim(namespace, buildPVC({ ...names, namespace }));
-    await coreApi.createNamespacedPod(
-      namespace,
-      buildPod({ ...names, namespace, serverId: server.id, ownerId: userId, memoryLimitMb, cpuLimit })
-    );
-    await coreApi.createNamespacedService(
-      namespace,
-      buildService({ ...names, namespace, serverId: server.id, port: server.port })
-    );
+    // 1. Create ConfigMap
+    await coreApi.createNamespacedConfigMap({
+      namespace: targetNamespace,
+      body: buildConfigMap({ 
+        ...names, 
+        namespace: targetNamespace, 
+        mcType, 
+        mcVersion, 
+        memoryLimitMb 
+      }),
+    });
+    
+    // 2. Create PVC
+    await coreApi.createNamespacedPersistentVolumeClaim({
+      namespace: targetNamespace,
+      body: buildPVC({ ...names, namespace: targetNamespace })
+    });
+    
+    // 3. Create Pod
+    await coreApi.createNamespacedPod({
+      namespace: targetNamespace,
+      body: buildPod({ ...names, namespace: targetNamespace, serverId: server.id, ownerId: userId, memoryLimitMb, cpuLimit })
+    });
+    
+    // 4. Create Service
+    await coreApi.createNamespacedService({
+      namespace: targetNamespace,
+      body: buildService({ ...names, namespace: targetNamespace, serverId: server.id, port: server.port })
+    });
+    
   } catch (err) {
     await updateServerStatus(server.id, 'error');
     throw err;
@@ -90,11 +109,17 @@ export async function listServers(userId) {
 
 export async function stopServer(userId, serverId) {
   const server = await assertOwnership(serverId, userId);
+  const targetNamespace = server.namespace || 'mc-servers';
+  
   await coreApi
-    .deleteNamespacedPod(server.pod_name, server.namespace)
+    .deleteNamespacedPod({
+      name: server.pod_name,
+      namespace: targetNamespace
+    })
     .catch((err) => {
       if (err.response?.statusCode !== 404) throw err;
     });
+    
   return updateServerStatus(serverId, 'stopped');
 }
 
@@ -102,19 +127,24 @@ export async function startServer(userId, serverId) {
   const server = await assertOwnership(serverId, userId);
   if (server.status === 'running') return server;
 
-  await coreApi.createNamespacedPod(
-    server.namespace,
-    buildPod({
+  // กำหนด namespace ปลอดภัย (เช็กถ้าไม่มีใน DB ให้ถอยไปใช้ 'mc-servers')
+  const targetNamespace = server.namespace || 'mc-servers';
+
+  // เรียกใช้ API ในรูปแบบ Object Parameter ({ namespace, body })
+  await coreApi.createNamespacedPod({
+    namespace: targetNamespace,
+    body: buildPod({
       podName: server.pod_name,
-      namespace: server.namespace,
+      namespace: targetNamespace,
       serverId: server.id,
       ownerId: userId,
       configmapName: server.configmap_name,
       pvcName: server.pvc_name,
       memoryLimitMb: server.memory_limit_mb,
       cpuLimit: server.cpu_limit,
-    })
-  );
+    }),
+  });
+
   return updateServerStatus(serverId, 'creating');
 }
 
@@ -122,12 +152,13 @@ export async function deleteServer(userId, serverId) {
   const server = await assertOwnership(serverId, userId);
   await updateServerStatus(serverId, 'deleting');
 
-  const ns = server.namespace;
+  const ns = server.namespace || 'mc-servers';
+  
   await Promise.allSettled([
-    coreApi.deleteNamespacedPod(server.pod_name, ns),
-    coreApi.deleteNamespacedService(server.service_name, ns),
-    coreApi.deleteNamespacedPersistentVolumeClaim(server.pvc_name, ns),
-    coreApi.deleteNamespacedConfigMap(server.configmap_name, ns),
+    coreApi.deleteNamespacedPod({ name: server.pod_name, namespace: ns }),
+    coreApi.deleteNamespacedService({ name: server.service_name, namespace: ns }),
+    coreApi.deleteNamespacedPersistentVolumeClaim({ name: server.pvc_name, namespace: ns }),
+    coreApi.deleteNamespacedConfigMap({ name: server.configmap_name, namespace: ns }),
   ]);
 
   await deleteServerRow(serverId);
