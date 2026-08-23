@@ -15,11 +15,17 @@ test('resolveSafePath: bare filename (no leading slash) resolves under /data', (
 });
 
 test('resolveSafePath: rejects simple traversal', () => {
-  assert.throws(() => resolveSafePath('../../etc/passwd'), /escapes/);
+  assert.throws(
+  () => resolveSafePath('../etc/passwd'), 
+  /path traversal attempt detected/
+);
 });
 
 test('resolveSafePath: rejects traversal disguised inside a subpath', () => {
-  assert.throws(() => resolveSafePath('plugins/../../etc/passwd'), /escapes/);
+  assert.throws(
+    () => resolveSafePath('plugins/../../etc/passwd'),
+    /path traversal attempt detected/
+  );
 });
 
 test('resolveSafePath: collapses safe internal ".." segments', () => {
