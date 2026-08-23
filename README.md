@@ -15,8 +15,7 @@ Users register, click "Create Server," pick a Minecraft version/type, and the pl
 | Database | PostgreSQL |
 | Container image | `itzg/minecraft-server` |
 | Orchestration | Kubernetes via **k3d** (local, Docker-in-Docker k3s cluster) |
-| Packaging | Helm chart |
-| CI/CD | GitHub Actions (build images, run tests, redeploy to local k3d via self-hosted runner or manual `helm upgrade`) |
+| CI/CD | GitHub Actions (build images, run tests, redeploy to local k3d via self-hosted runner) |
 | Monitoring | Prometheus + Grafana (deployed in-cluster) |
 | Ingress | Traefik (bundled with k3s) |
 
@@ -47,7 +46,7 @@ See [`docs/api-contract.md`](docs/api-contract.md) for full endpoint list.
 - [x] Phase 4 — Database + Auth
 - [x] Phase 5 — Frontend dashboard
 - [x] Phase 6 — File manager + backups
-- [x] Phase 7 — k3d cluster setup + Helm packaging
+- [x] Phase 7 — k3d cluster setup
 - [ ] Phase 8 — CI/CD pipeline (build + local redeploy)
 - [ ] Phase 9 — Monitoring & logging (Prometheus/Grafana in-cluster)
 - [ ] Phase 10 — Documentation polish
@@ -74,6 +73,36 @@ cd ../frontend && cp .env.example .env
 npm install
 npm run dev   # http://localhost:5173
 ```
+
+## CI/CD (Phase 8)
+
+Two separate GitHub Actions workflows, because this project has no cloud
+account and no registry — CI validates on GitHub's own runners; CD deploys
+to *your* machine, which GitHub's runners can't reach.
+
+- **`.github/workflows/ci.yml`** — every push/PR, on GitHub-hosted runners:
+  backend unit tests (`node --test`), backend + frontend Docker builds
+  (build-only, nothing pushed anywhere), frontend Vite build, and
+  `k8s/*.yaml` validated against the real Kubernetes schema with
+  [kubeconform](https://github.com/yannh/kubeconform) — no live cluster
+  needed for this check.
+- **`.github/workflows/deploy.yml`** — push to `main`, but only runs on a
+  **self-hosted runner**: rebuilds both images, `k3d image import`s them,
+  re-applies `k8s/`, re-runs the migration Job, and rolls the Deployments.
+
+### Self-hosted runner setup
+
+The runner must live on the same machine as your k3d cluster (it needs
+`docker`, `k3d`, and `kubectl` on its `PATH`, and your kubeconfig).
+
+1. GitHub repo → **Settings → Actions → Runners → New self-hosted runner**,
+   follow the generated `./config.sh` command for your OS.
+2. Run it as a background service (`./svc.sh install && ./svc.sh start` on
+   Linux/macOS) so it's always listening for pushes to `main`.
+3. Push to `main` — the **Deploy (local k3d)** workflow picks it up.
+
+Without a registered self-hosted runner, `deploy.yml` simply has nothing to
+run on and stays queued — `ci.yml` still runs normally on every push.
 
 ## License
 

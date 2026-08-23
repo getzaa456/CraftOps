@@ -1,0 +1,40 @@
+name: Deploy (local k3d)
+
+# Runs only on a self-hosted runner registered on the same machine as the
+# k3d cluster — see README "Self-hosted runner setup". GitHub-hosted
+# runners have no network path to a cluster living on your laptop, so this
+# workflow intentionally does not run there.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build images
+        run: |
+          docker build -t mc-panel-backend:local ./backend
+          docker build -t mc-panel-frontend:local ./frontend
+
+      - name: Load images into k3d
+        run: k3d image import mc-panel-backend:local mc-panel-frontend:local -c mc-cluster
+
+      - name: Apply manifests
+        run: kubectl apply -f k8s/
+
+      - name: Re-run migrations
+        run: |
+          kubectl delete job/mc-panel-migrate -n mc-platform --ignore-not-found
+          kubectl apply -f k8s/05-migration-job.yaml
+          kubectl wait --for=condition=complete job/mc-panel-migrate -n mc-platform --timeout=120s
+
+      - name: Roll out new images
+        run: |
+          kubectl rollout restart deployment/mc-panel-backend deployment/mc-panel-frontend -n mc-platform
+          kubectl rollout status deployment/mc-panel-backend -n mc-platform --timeout=120s
+          kubectl rollout status deployment/mc-panel-frontend -n mc-platform --timeout=120s
