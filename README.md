@@ -45,10 +45,9 @@ See [`docs/api-contract.md`](docs/api-contract.md) for full endpoint list.
 - [x] Phase 4 — Database + Auth
 - [x] Phase 5 — Frontend dashboard
 - [x] Phase 6 — File manager + backups
-- [x] Phase 7 — ~~k3d deploy of the platform~~ — descoped; local-dev-only by design (see architecture.md)
-- [x] Phase 8 — CI (build/test validation) — CD dropped along with Phase 7
-- [x] Phase 9 — Monitoring & logging
-- [ ] Phase 10 — Documentation polish
+- [x] Phase 7 — CI (build/test validation) — CD dropped along with Phase 7
+- [x] Phase 8 — Monitoring & logging
+- [ ] Phase 9 — Documentation polish
 
 ## Local Development
 
@@ -72,8 +71,8 @@ kubectl create namespace mc-servers
 # dashboard's CPU/memory bars show real numbers instead of "—"
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 kubectl patch deployment metrics-server -n kube-system --type='json' \
- -p '[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": 
- \ ["--cert-dir=/tmp", "--secure-port=4443", "--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname",\
+  -p '[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": \
+  ["--cert-dir=/tmp", "--secure-port=4443", "--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname", \
   "--kubelet-use-node-status-port", "--metric-resolution=15s", "--kubelet-insecure-tls"]}]'
 
 # 3. Backend
@@ -85,7 +84,7 @@ npm install
 npm run dev   # http://localhost:5173
 ```
 
-## Monitoring (Phase 9)
+## Monitoring (Phase 8)
 
 Two independent pieces — neither requires deploying the platform into
 Kubernetes, keeping this consistent with staying local-dev-only:
@@ -112,7 +111,7 @@ Kubernetes, keeping this consistent with staying local-dev-only:
   "—") if metrics-server isn't installed or hasn't scraped yet — this is
   enrichment, not a hard dependency.
 
-## CI (Phase 8)
+## CI (Phase 7)
 
 GitHub Actions, validation only — there's no deploy step, since there's
 nowhere for GitHub's runners to deploy *to*:
