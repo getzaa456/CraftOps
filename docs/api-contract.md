@@ -53,6 +53,9 @@ List current user's servers.
 ```
 
 ### `GET /servers/:id`
+`cpu_usage_pct`/`mem_usage_mb` are only populated when `status: "running"`
+**and** metrics-server is installed in the cluster (see README); otherwise
+both are `null`.
 ```json
 // response 200
 {
@@ -141,6 +144,12 @@ Trigger a manual backup.
 // response 202
 { "status": "restoring" }
 ```
+
+## Ops Endpoints
+Outside `/api/v1`, unauthenticated, for tooling rather than the frontend:
+
+- `GET /healthz` → `{ "ok": true }`
+- `GET /metrics` → Prometheus text format (see README "Monitoring")
 
 ## Status Codes
 

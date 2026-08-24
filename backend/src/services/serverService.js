@@ -11,6 +11,7 @@ import {
 import { countUserServers, findUserById } from '../db/users.js';
 import { config } from '../config.js';
 import { QuotaExceededError, NotFoundError } from '../errors.js';
+import { getPodResourceUsage } from './metricsService.js';
 
 async function assertOwnership(serverId, userId) {
   const server = await getServerById(serverId);
@@ -45,40 +46,21 @@ export async function createServer(userId, { mcType, mcVersion, memoryLimitMb = 
     memoryLimitMb,
     cpuLimit,
   });
-  
-  const targetNamespace = namespace || 'mc-servers';
-  
+
   try {
-    // 1. Create ConfigMap
-    await coreApi.createNamespacedConfigMap({
-      namespace: targetNamespace,
-      body: buildConfigMap({ 
-        ...names, 
-        namespace: targetNamespace, 
-        mcType, 
-        mcVersion, 
-        memoryLimitMb 
-      }),
-    });
-    
-    // 2. Create PVC
-    await coreApi.createNamespacedPersistentVolumeClaim({
-      namespace: targetNamespace,
-      body: buildPVC({ ...names, namespace: targetNamespace })
-    });
-    
-    // 3. Create Pod
-    await coreApi.createNamespacedPod({
-      namespace: targetNamespace,
-      body: buildPod({ ...names, namespace: targetNamespace, serverId: server.id, ownerId: userId, memoryLimitMb, cpuLimit })
-    });
-    
-    // 4. Create Service
-    await coreApi.createNamespacedService({
-      namespace: targetNamespace,
-      body: buildService({ ...names, namespace: targetNamespace, serverId: server.id, port: server.port })
-    });
-    
+    await coreApi.createNamespacedConfigMap(
+      namespace,
+      buildConfigMap({ ...names, namespace, mcType, mcVersion, memoryLimitMb })
+    );
+    await coreApi.createNamespacedPersistentVolumeClaim(namespace, buildPVC({ ...names, namespace }));
+    await coreApi.createNamespacedPod(
+      namespace,
+      buildPod({ ...names, namespace, serverId: server.id, ownerId: userId, memoryLimitMb, cpuLimit })
+    );
+    await coreApi.createNamespacedService(
+      namespace,
+      buildService({ ...names, namespace, serverId: server.id, port: server.port })
+    );
   } catch (err) {
     await updateServerStatus(server.id, 'error');
     throw err;
@@ -90,7 +72,14 @@ export async function createServer(userId, { mcType, mcVersion, memoryLimitMb = 
 }
 
 export async function getServer(userId, serverId) {
-  return assertOwnership(serverId, userId);
+  const server = await assertOwnership(serverId, userId);
+  if (server.status !== 'running') return server;
+
+  const usage = await getPodResourceUsage(server.namespace, server.pod_name, {
+    cpuLimitCores: Number(server.cpu_limit),
+    memoryLimitMb: server.memory_limit_mb,
+  });
+  return { ...server, ...usage };
 }
 
 export async function assertServerRunning(userId, serverId) {
@@ -109,17 +98,11 @@ export async function listServers(userId) {
 
 export async function stopServer(userId, serverId) {
   const server = await assertOwnership(serverId, userId);
-  const targetNamespace = server.namespace || 'mc-servers';
-  
   await coreApi
-    .deleteNamespacedPod({
-      name: server.pod_name,
-      namespace: targetNamespace
-    })
+    .deleteNamespacedPod(server.pod_name, server.namespace)
     .catch((err) => {
       if (err.response?.statusCode !== 404) throw err;
     });
-    
   return updateServerStatus(serverId, 'stopped');
 }
 
@@ -127,24 +110,19 @@ export async function startServer(userId, serverId) {
   const server = await assertOwnership(serverId, userId);
   if (server.status === 'running') return server;
 
-  // กำหนด namespace ปลอดภัย (เช็กถ้าไม่มีใน DB ให้ถอยไปใช้ 'mc-servers')
-  const targetNamespace = server.namespace || 'mc-servers';
-
-  // เรียกใช้ API ในรูปแบบ Object Parameter ({ namespace, body })
-  await coreApi.createNamespacedPod({
-    namespace: targetNamespace,
-    body: buildPod({
+  await coreApi.createNamespacedPod(
+    server.namespace,
+    buildPod({
       podName: server.pod_name,
-      namespace: targetNamespace,
+      namespace: server.namespace,
       serverId: server.id,
       ownerId: userId,
       configmapName: server.configmap_name,
       pvcName: server.pvc_name,
       memoryLimitMb: server.memory_limit_mb,
       cpuLimit: server.cpu_limit,
-    }),
-  });
-
+    })
+  );
   return updateServerStatus(serverId, 'creating');
 }
 
@@ -152,13 +130,12 @@ export async function deleteServer(userId, serverId) {
   const server = await assertOwnership(serverId, userId);
   await updateServerStatus(serverId, 'deleting');
 
-  const ns = server.namespace || 'mc-servers';
-  
+  const ns = server.namespace;
   await Promise.allSettled([
-    coreApi.deleteNamespacedPod({ name: server.pod_name, namespace: ns }),
-    coreApi.deleteNamespacedService({ name: server.service_name, namespace: ns }),
-    coreApi.deleteNamespacedPersistentVolumeClaim({ name: server.pvc_name, namespace: ns }),
-    coreApi.deleteNamespacedConfigMap({ name: server.configmap_name, namespace: ns }),
+    coreApi.deleteNamespacedPod(server.pod_name, ns),
+    coreApi.deleteNamespacedService(server.service_name, ns),
+    coreApi.deleteNamespacedPersistentVolumeClaim(server.pvc_name, ns),
+    coreApi.deleteNamespacedConfigMap(server.configmap_name, ns),
   ]);
 
   await deleteServerRow(serverId);

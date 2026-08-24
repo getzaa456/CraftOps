@@ -150,10 +150,13 @@ above):
 - There's no CD pipeline — `git log` / the removed `k8s/` and
   `.github/workflows/deploy.yml` files (see version control history) show
   what that looked like, if it's ever worth re-adding.
-- Prometheus/Grafana-style monitoring (Phase 9) would normally live
-  in-cluster alongside the platform; without that deployment layer, any
-  monitoring work needs a different home (e.g. instrumenting the backend
-  process directly) — not yet decided.
+- Prometheus/Grafana-style monitoring (Phase 9) doesn't need the removed
+  deploy layer after all: the backend exposes `/metrics` directly
+  (`src/metrics.js`) and an opt-in `docker-compose.monitoring.yml` runs
+  Prometheus + Grafana locally, scraping the host-run backend via
+  `host.docker.internal`. Per-server CPU/memory comes from querying
+  metrics-server directly rather than through a scrape pipeline — see
+  `src/services/metricsService.js`.
 
 ## Data Flow: Create Server
 

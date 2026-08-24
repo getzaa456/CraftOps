@@ -5,6 +5,7 @@ import { app } from './app.js';
 import { config } from './config.js';
 import { startStatusWatcher } from './k8s/statusWatcher.js';
 import { streamLogsToSocket } from './services/logStreamService.js';
+import { logger } from './logger.js';
 
 const server = http.createServer(app);
 
@@ -35,6 +36,7 @@ wss.on('connection', async (ws, { serverId, userId }) => {
     const controller = await streamLogsToSocket(userId, serverId, ws);
     ws.on('close', () => controller.abort());
   } catch (err) {
+    logger.warn({ err, serverId, userId }, 'log stream failed to start');
     ws.send(JSON.stringify({ error: err.message }));
     ws.close();
   }
@@ -43,5 +45,5 @@ wss.on('connection', async (ws, { serverId, userId }) => {
 startStatusWatcher();
 
 server.listen(config.port, () => {
-  console.log(`mc-host-panel backend listening on :${config.port}`);
+  logger.info({ port: config.port }, 'mc-host-panel backend listening');
 });

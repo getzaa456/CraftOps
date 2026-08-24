@@ -47,7 +47,7 @@ See [`docs/api-contract.md`](docs/api-contract.md) for full endpoint list.
 - [x] Phase 6 — File manager + backups
 - [x] Phase 7 — ~~k3d deploy of the platform~~ — descoped; local-dev-only by design (see architecture.md)
 - [x] Phase 8 — CI (build/test validation) — CD dropped along with Phase 7
-- [ ] Phase 9 — Monitoring & logging
+- [x] Phase 9 — Monitoring & logging
 - [ ] Phase 10 — Documentation polish
 
 ## Local Development
@@ -68,6 +68,14 @@ k3d cluster create mc-cluster \
   -p "25565-25600:30565-30600@server:0"
 kubectl create namespace mc-servers
 
+# metrics-server isn't part of the default k3s install — add it so the
+# dashboard's CPU/memory bars show real numbers instead of "—"
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+kubectl patch deployment metrics-server -n kube-system --type='json' \
+ -p '[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": 
+ \ ["--cert-dir=/tmp", "--secure-port=4443", "--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname",\
+  "--kubelet-use-node-status-port", "--metric-resolution=15s", "--kubelet-insecure-tls"]}]'
+
 # 3. Backend
 npm run dev   # http://localhost:4000
 
@@ -76,6 +84,33 @@ cd ../frontend && cp .env.example .env
 npm install
 npm run dev   # http://localhost:5173
 ```
+
+## Monitoring (Phase 9)
+
+Two independent pieces — neither requires deploying the platform into
+Kubernetes, keeping this consistent with staying local-dev-only:
+
+- **Structured logs**: the backend logs JSON lines via
+  [pino](https://getpino.io) (`src/logger.js`) — one line per request
+  (method, path, status, duration, request id) plus explicit `logger.warn`
+  /`.error` calls at every failure point that used to just be
+  `console.error`. Pipe to `npx pino-pretty` locally for colorized output.
+- **Metrics**: the backend exposes Prometheus-format metrics at
+  `GET /metrics` (`src/metrics.js`) — HTTP request duration/count, Node
+  process stats, `mc_servers_by_status`, `k8s_api_errors_total`. An opt-in
+  local Prometheus + Grafana stack scrapes it:
+  ```bash
+  docker compose -f docker-compose.monitoring.yml up -d
+  open http://localhost:9090   # Prometheus
+  open http://localhost:3001   # Grafana (anonymous viewer access, Prometheus pre-wired as datasource)
+  ```
+- **Real per-server CPU/memory**: `GET /servers/:id` now queries
+  metrics-server directly (`src/services/metricsService.js`) for the
+  running Pod's live usage and fills in `cpu_usage_pct`/`mem_usage_mb` —
+  the fields the frontend's `StatBar` always expected but the backend
+  never actually populated until now. Falls back to `null` (rendered as
+  "—") if metrics-server isn't installed or hasn't scraped yet — this is
+  enrichment, not a hard dependency.
 
 ## CI (Phase 8)
 
