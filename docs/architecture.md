@@ -3,13 +3,13 @@
 ## Components
 
 ```
-┌─────────────┐      REST + WebSocket      ┌──────────────────┐
+┌─────────────┐      REST + WebSocket      ┌───────────────────┐
 │  Frontend   │ ─────────────────────────► │   Backend API     │
 │  (React)    │ ◄───────────────────────── │  (Node/Express)   │
 └─────────────┘                            └────────┬──────────┘
                                                      │ @kubernetes/client-node
                                                      ▼
-                                            ┌──────────────────┐
+                                            ┌───────────────────┐
                                             │  Kubernetes API   │
                                             │  (k3d cluster)    │
                                             └────────┬──────────┘
@@ -21,11 +21,11 @@
                               │ + PVC     │   │ + PVC     │    │ + PVC     │
                               └───────────┘   └───────────┘    └───────────┘
 
-                                            ┌──────────────────┐
+                                            ┌───────────────────┐
                             Backend API ───►│   PostgreSQL      │
-                                            │ users / servers /  │
-                                            │ backups            │
-                                            └──────────────────┘
+                                            │ users / servers / │
+                                            │ backups           │
+                                            └───────────────────┘
 ```
 
 The user-created Minecraft servers run inside a local **k3d** cluster (k3s running as Docker containers). The platform itself (frontend, backend, Postgres) runs directly on the developer's machine via `npm run dev` / `docker compose` — it is **not** deployed into the cluster. See "Local-Dev-Only, By Design" below for why.
@@ -53,7 +53,7 @@ Using k3d instead of raw `docker run` lets the backend manage servers as declara
    ┌──► running ◄──┐
    │      │        │
    │      ▼        │
-   │   stopped ─────┘
+   │   stopped ────┘
    │      │
    ▼      ▼
        deleting
