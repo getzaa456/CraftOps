@@ -38,7 +38,7 @@ CREATE TABLE servers (
     namespace       TEXT NOT NULL DEFAULT 'mc-servers',
 
     -- Networking (k3d host port <-> NodePort, fixed +5000 offset)
-    port            INT NOT NULL UNIQUE CHECK (port BETWEEN 25565 AND 25600), -- host-facing port
+    port            INT NOT NULL CHECK (port BETWEEN 25565 AND 25600), -- host-facing port; uniqueness enforced below, only among active rows
     node_port       INT GENERATED ALWAYS AS (port + 5000) STORED,             -- k8s Service nodePort
 
     mc_type         mc_type NOT NULL DEFAULT 'PAPER',
@@ -52,6 +52,14 @@ CREATE TABLE servers (
 
 CREATE INDEX idx_servers_owner_id ON servers(owner_id);
 CREATE INDEX idx_servers_status   ON servers(status);
+
+-- Port uniqueness only applies among *active* (non-deleted) servers — a
+-- plain UNIQUE constraint here would block reusing a port freed by a
+-- deleted server, which is exactly the bug migration 0002 fixes. Unlike
+-- pod_name/service_name/pvc_name/configmap_name (unique forever, since
+-- they're keyed by a fresh UUID every time), port is drawn from a small
+-- fixed pool and is meant to be reused.
+CREATE UNIQUE INDEX servers_port_active_unique ON servers (port) WHERE status != 'deleted';
 
 -- ─────────────────────────────────────────────
 -- backups

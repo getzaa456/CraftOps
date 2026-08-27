@@ -3,13 +3,13 @@
 ## Components
 
 ```
-┌─────────────┐      REST + WebSocket      ┌───────────────────┐
+┌─────────────┐      REST + WebSocket      ┌──────────────────┐
 │  Frontend   │ ─────────────────────────► │   Backend API     │
 │  (React)    │ ◄───────────────────────── │  (Node/Express)   │
 └─────────────┘                            └────────┬──────────┘
                                                      │ @kubernetes/client-node
                                                      ▼
-                                            ┌───────────────────┐
+                                            ┌──────────────────┐
                                             │  Kubernetes API   │
                                             │  (k3d cluster)    │
                                             └────────┬──────────┘
@@ -21,11 +21,11 @@
                               │ + PVC     │   │ + PVC     │    │ + PVC     │
                               └───────────┘   └───────────┘    └───────────┘
 
-                                            ┌───────────────────┐
+                                            ┌──────────────────┐
                             Backend API ───►│   PostgreSQL      │
-                                            │ users / servers / │
-                                            │ backups           │
-                                            └───────────────────┘
+                                            │ users / servers /  │
+                                            │ backups            │
+                                            └──────────────────┘
 ```
 
 The user-created Minecraft servers run inside a local **k3d** cluster (k3s running as Docker containers). The platform itself (frontend, backend, Postgres) runs directly on the developer's machine via `npm run dev` / `docker compose` — it is **not** deployed into the cluster. See "Local-Dev-Only, By Design" below for why.
@@ -53,7 +53,7 @@ Using k3d instead of raw `docker run` lets the backend manage servers as declara
    ┌──► running ◄──┐
    │      │        │
    │      ▼        │
-   │   stopped ────┘
+   │   stopped ─────┘
    │      │
    ▼      ▼
        deleting
@@ -75,9 +75,9 @@ Using k3d instead of raw `docker run` lets the backend manage servers as declara
   k3d cluster create mc-cluster -p "25565-25600:30565-30600@server:0"
   ```
   This maps host ports `25565–25600` → NodePort range `30565–30600` inside the cluster.
-- On server creation, the backend picks the first unused `port` (25565–25600) from the `servers` table.
+- On server creation, the backend picks the first unused `port` (25565–25600) from the `servers` table, inside a transaction guarded by a Postgres advisory lock (`db/servers.js`) — this is what actually prevents two concurrent "create server" requests from racing to the same port; a plain SELECT-then-INSERT wouldn't be safe here.
 - The corresponding Kubernetes `Service` is created with `type: NodePort` and `nodePort = port + 5000` (fixed offset, matches the k3d mapping above).
-- Releasing a port is implicit: once a server row is deleted, that port becomes selectable again.
+- Releasing a port is implicit: once a server row is soft-deleted (`status = 'deleted'`), that port becomes selectable again — enforced by a **partial** unique index (`WHERE status != 'deleted'`), not a plain `UNIQUE` constraint. An earlier version of the schema used a plain constraint, which blocked reusing a port freed by a deleted server (`duplicate key value violates unique constraint "servers_port_key"` — found via real usage, fixed in migration `0002`). See `docs/database-schema.sql` for the corrected schema and `docs/troubleshooting.md` for the full story.
 - Pool exhaustion (all 36 ports in use) returns `409` to the frontend.
 
 ## Pod / Resource Naming & Isolation

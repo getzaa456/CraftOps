@@ -45,9 +45,10 @@ See [`docs/api-contract.md`](docs/api-contract.md) for full endpoint list.
 - [x] Phase 4 — Database + Auth
 - [x] Phase 5 — Frontend dashboard
 - [x] Phase 6 — File manager + backups
-- [x] Phase 7 — CI (build/test validation) — CD dropped along with Phase 7
-- [x] Phase 8 — Monitoring & logging
-- [ ] Phase 9 — Documentation polish
+- [x] Phase 7 — ~~k3d deploy of the platform~~ — descoped; local-dev-only by design (see architecture.md)
+- [x] Phase 8 — CI (build/test validation) — CD dropped along with Phase 7
+- [x] Phase 9 — Monitoring & logging
+- [x] Phase 10 — Documentation polish
 
 ## Local Development
 
@@ -70,10 +71,8 @@ kubectl create namespace mc-servers
 # metrics-server isn't part of the default k3s install — add it so the
 # dashboard's CPU/memory bars show real numbers instead of "—"
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-kubectl patch deployment metrics-server -n kube-system --type='json' \
-  -p '[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": \
-  ["--cert-dir=/tmp", "--secure-port=4443", "--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname", \
-  "--kubelet-use-node-status-port", "--metric-resolution=15s", "--kubelet-insecure-tls"]}]'
+kubectl patch deployment metrics-server -n kube-system --type=json \
+  -p '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
 
 # 3. Backend
 npm run dev   # http://localhost:4000
@@ -84,7 +83,7 @@ npm install
 npm run dev   # http://localhost:5173
 ```
 
-## Monitoring (Phase 8)
+## Monitoring (Phase 9)
 
 Two independent pieces — neither requires deploying the platform into
 Kubernetes, keeping this consistent with staying local-dev-only:
@@ -111,7 +110,7 @@ Kubernetes, keeping this consistent with staying local-dev-only:
   "—") if metrics-server isn't installed or hasn't scraped yet — this is
   enrichment, not a hard dependency.
 
-## CI (Phase 7)
+## CI (Phase 8)
 
 GitHub Actions, validation only — there's no deploy step, since there's
 nowhere for GitHub's runners to deploy *to*:
@@ -121,6 +120,26 @@ nowhere for GitHub's runners to deploy *to*:
   pushed anywhere — these images aren't used by anything in this project
   beyond validating the Dockerfiles build cleanly), and the frontend Vite
   build.
+
+## Known Limitations
+
+Honest list, not a sales pitch:
+
+- **Tested on Windows during real development, not on Linux/macOS** — the
+  Docker/Postgres port workaround in `docker-compose.dev.yml` (5433 instead
+  of 5432) is a Windows-specific fix; it's harmless elsewhere but you may
+  not need it.
+- **Single-node Postgres** — `strategy: Recreate` on the Deployment-era
+  manifests (now removed, see architecture.md) and the current
+  `docker-compose.dev.yml` both assume one instance; no replication/backup
+  beyond the app's own world-backup feature.
+- **Backend uses the developer's kubeconfig**, not a scoped-down
+  ServiceAccount — fine for a local single-user tool, a real gap if this
+  ever ran anywhere less trusted. See architecture.md Security Notes.
+- **CPU/memory numbers require metrics-server** installed separately in
+  the k3d cluster (not bundled with k3s) — without it, `cpu_usage_pct`/
+  `mem_usage_mb` are `null` and the UI shows "—", which is the intended
+  fallback, not a bug.
 
 ## License
 
